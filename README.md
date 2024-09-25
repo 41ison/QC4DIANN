@@ -3,7 +3,7 @@
 Please, note that the columns names are slightly different in `report.tsv` and `report.parquet` files. Some importante informations are only available in the `report.parquet`.
 You can download the .qmd document and place it in the same folder as the report.parquet file.
 
-To have an in depth understanding of what is happening in this script, please check the [DIANN documentation](https://github.com/vdemichev/DiaNN), as well as the original publication of the QuantUMS algorithm by Demichev's group.
+To have an in depth understanding of what is happening in this script, please check the [DIANN documentation](https://github.com/vdemichev/DiaNN), as well as the original publication of the QuantUMS algorithm by Demichev's group:
 >Franziska Kistner, Justus L. Grossmann, Ludwig R. Sinn, Vadim Demichev. QuantUMS: uncertainty minimisation enables confident quantification in proteomics. bioRxiv 2023.06.20.545604; doi: https://doi.org/10.1101/2023.06.20.545604.
 
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
@@ -59,4 +59,69 @@ The files will be saved in the working directory and can be inspected in Excel, 
 ```
 readr::write_tsv(diann_report, "diann_report_QuantUMS.tsv")
 readr::write_tsv(unique_genes, "diann_matrix_QuantUMS.tsv")
+```
+
+For the reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
+You can generate a new column for `condition, group, etc.` and add the `color = condition` to the `aes()`, for instance.
+
+```
+precursor_rt <- diann_report %>%
+    ggplot(aes(x = RT, y = Precursor.Quantity)) +
+    geom_line(aes(color = Run), show.legend = FALSE) +
+    labs(
+        x = "Retention time (min)",
+        y = "Precursor quantity",
+        color = NULL
+    ) +
+    facet_wrap(~Run)
+
+ggsave("precursor_rt.png",
+    path = "plots",
+    precursor_rt, width = 15,
+    height = 10, units = "in", dpi = 350)
+```
+
+Plot the m/z map to show the density of ions collected over the scan range and retention time.
+It can be very informative of instability in dpray or chromatographic setup in general.
+
+```
+mz_map_density_plot <- diann_report %>%
+    ggplot(aes(x = RT, y = Precursor.Mz)) +
+    ggpointdensity::geom_pointdensity(size = 0.25) +
+    viridis::scale_color_viridis(option = "plasma") +
+    scale_x_continuous(limits = c(0, 90)) + # replace 90 with the length of the gradient
+    labs(
+        x = "Retention time (min)",
+        y = " Scan range (m/z)",
+        color = NULL
+    ) +
+    theme(legend.position = "bottom",
+        legend.key.width = unit(1.5, "cm")) +
+    facet_wrap(~Run)
+
+ggsave("mz_map_density_plot.png",
+    path = "plots",
+    mz_map_density_plot, width = 15,
+    height = 10, units = "in", dpi = 350)
+```
+
+The charge state distribution can be informative in experiments using FAIMS, for instance.
+
+```{r}
+precursor_charge_density <- diann_report %>%
+    ggplot(aes(x = Precursor.Charge, fill = Run)) +
+    geom_density(alpha = 0.7, 
+            stat = "density", 
+            show.legend = FALSE) +
+    labs(
+        x = "Precursor charge",
+        y = "Density",
+        fill = NULL
+    ) +
+    facet_wrap(~Run)
+
+ggsave("precursor_charge_density.png",
+    path = "plots",
+    precursor_charge_density, width = 10,
+    height = 10, units = "in", dpi = 350)
 ```
