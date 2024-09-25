@@ -29,7 +29,9 @@ Information from DIANN documentation:
 - **PG.MaxLFQ.Quality:** when using QuantUMS reflects the quality of PG.MaxLFQ.
 
 Load the output data from DIANN search using the arrow function `read_parquet()`.
+
 [!NOTE]
+
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
 ```
