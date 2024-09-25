@@ -5,6 +5,7 @@ You can download the .qmd document and place it in the same folder as the report
 
 To have an in depth understanding of what is happening in this script, please check the [DIANN documentation](https://github.com/vdemichev/DiaNN), as well as the original publication of the QuantUMS algorithm by Demichev's group.
 >Franziska Kistner, Justus L. Grossmann, Ludwig R. Sinn, Vadim Demichev. QuantUMS: uncertainty minimisation enables confident quantification in proteomics. bioRxiv 2023.06.20.545604; doi: https://doi.org/10.1101/2023.06.20.545604.
+
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
 
 Make sure you have the following packages installed:
