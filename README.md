@@ -1,6 +1,6 @@
-## Quality control analysis of DIA data using DIA-NN 1.9.1 search results
+## Quality control analysis of DIA data using [DIA-NN 1.9.1](https://github.com/vdemichev/DiaNN/releases/tag/1.9.1) search results
 
-Please, note that the columns names are slightly different in `report.tsv` and `report.parquet` files. Some importante informations are only available in the `report.parquet`.
+Please, note that the column names are slightly different in `report.tsv` and `report.parquet` files. Some importante informations are only available in the `report.parquet`.
 You can download the .qmd document and place it in the same folder as the report.parquet file.
 
 To have an in depth understanding of what is happening in this script, please check the [DIANN documentation](https://github.com/vdemichev/DiaNN), as well as the original publication of the QuantUMS algorithm by Demichev's group:
@@ -8,7 +8,7 @@ To have an in depth understanding of what is happening in this script, please ch
 
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
 
-Make sure you have the following packages installed:
+Make sure you have the following packages installed and loaded:
 ```
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow)  # to read the report.parquet file
