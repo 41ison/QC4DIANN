@@ -9,7 +9,7 @@ To have an in depth understanding of what is happening in this script, please ch
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
 
 Make sure you have the following packages installed and loaded:
-```
+```r
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow)  # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -28,9 +28,8 @@ Information from DIANN documentation:
 - **Empirical.Quality:** when using QuantUMS reflects the agreement of relative precursor quantities obtained using different quantitative features (MS1 / fragment ions).
 - **PG.MaxLFQ.Quality:** when using QuantUMS reflects the quality of PG.MaxLFQ.
 
-Load the output data from DIANN search using the arrow function `read_parquet()`.
+#### Load the output data from DIANN search using the arrow function `read_parquet()`.
 
-:NOTE:
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
 ```
