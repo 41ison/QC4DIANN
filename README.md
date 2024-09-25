@@ -29,7 +29,6 @@ Information from DIANN documentation:
 - `PG.MaxLFQ.Quality:` when using QuantUMS reflects the quality of PG.MaxLFQ.
 
 Load the output data from DIANN search using the arrow function `read_parquet()`.
-
 [!NOTE]
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
@@ -110,7 +109,7 @@ ggsave("mz_map_density_plot.png",
 
 The charge state distribution can be informative in experiments using FAIMS, for instance.
 
-```{r}
+```
 precursor_charge_density <- diann_report %>%
     ggplot(aes(x = Precursor.Charge, fill = Run)) +
     geom_density(alpha = 0.7, 
@@ -126,5 +125,193 @@ precursor_charge_density <- diann_report %>%
 ggsave("precursor_charge_density.png",
     path = "plots",
     precursor_charge_density, width = 10,
+    height = 10, units = "in", dpi = 350)
+```
+Counting the number of proteins per sample.
+
+```
+proteins_plot <- proteins %>%
+    ggplot(aes(y = Run, x = n_proteins, fill = Run)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+    geom_vline(xintercept = 4500, linetype = "dashed", color = "black") + # replace the 4500 with a threshold of interest
+    geom_text(aes(label = n_proteins),
+        color = "white", size = 5,
+        hjust = 1, nudge_x = -0.5
+        ) +
+    labs(y = NULL,
+        x = "Number of proteins",
+        fill = NULL) +
+    theme(axis.text.x = element_text(angle = 90,
+                        vjust = 0.5,
+                        hjust = 1)
+    )
+
+ggsave("proteins_plot.png",
+    path = "plots",
+    proteins_plot, width = 10,
+    height = 10, units = "in", dpi = 350)
+```
+
+Evaluate the sparsity profile for each sample.
+
+```
+sparsity_plot <- unique_genes %>%
+    as.data.frame() %>%
+    naniar::vis_miss() +
+    labs(x = NULL,
+        y = "Proteins") +
+    theme(text = element_text(color = "black"),
+        axis.text.y = element_text(color = "black", vjust = 1),
+        axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                   hjust = 0, color = "black"),
+        line = element_blank()
+    )
+
+# save the plot in the working directory
+ggsave("sparsity_plot.png",
+    path = "plots",
+    sparsity_plot, width = 10, bg = "white",
+    height = 10, units = "in", dpi = 350)
+```
+
+Calculate the proportion of missing values and median abundance per sample and plot the correlation between them.
+This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biometry and Statistics). You will see that, depending on the normalization method used, the correlation will change.
+
+```
+sample_abundance_vs_missing <- log2(unique_genes) %>%
+    as.data.frame() %>%
+    gather(key = "Sample", value = "Intensity") %>%
+    dplyr::mutate(missing = is.na(Intensity)) %>%
+    dplyr::group_by(Sample) %>%
+    dplyr::summarise(
+        missing = mean(missing) * 100,
+        median_intensity = median(Intensity, na.rm = TRUE)
+    )
+
+corr_mean_missing <- sample_abundance_vs_missing %>%
+    ggplot(aes(x = missing, y = median_intensity)) +
+    geom_point(alpha = 0.5, size = 2) +
+    geom_smooth(method = "lm", se = FALSE,
+        color = "red") +
+    labs(x = "Proportion of missing values (%)",
+        y = "Mean abundance",
+        color = NULL)
+
+ggsave("corr_mean_missing.png",
+    path = "plots",
+    corr_mean_missing, width = 3,
+    height = 3, units = "in", dpi = 350)
+```
+
+Plot the log2 transformed abundance distribution before and after the normalization
+The normalization methods available in `limma` package are: "none", "scale", "quantile", "cyclicloess", "Aquantile", "Gquantile", "Rquantile" or "Tquantile".
+From `limma` documentation:
+>Scale normalization was proposed by Yang et al (2001, 2002) and is further explained by Smyth and Speed (2003). The idea is simply to scale the log-ratios to have the same median-absolute-deviation (MAD) across arrays. This idea has also been implemented by the maNormScale function in the marray package. The implementation here is slightly different in that the MAD scale estimator is replaced with the median-absolute-value and the A-values are normalized as well as the M-values.
+
+```
+df_long_raw <- unique_genes %>%
+    log2() %>%
+    as.data.frame() %>%
+    gather(key = "Sample", value = "Intensity") %>%
+    dplyr::mutate(norm = "Raw matrix")
+
+df_long_norm <- log2(unique_genes) %>%  # if there are Inf values we can add 0.5 to the intensity value before log transformation
+    limma::normalizeBetweenArrays(method = "scale") %>% # we can change the method to any other available in limma and to compare the profiles
+    as.data.frame() %>%
+    gather(key = "Sample", value = "Intensity") %>%
+    dplyr::mutate(norm = "MAD normalised")
+
+combined_data <- rbind(df_long_raw, df_long_norm) %>%
+    dplyr::mutate(norm = factor(norm, levels = c("Raw matrix", "MAD normalised")))
+
+# plot the intensity distribution on log2 scale
+intensity_distribution <- combined_data %>%
+    ggplot(aes(
+        x = Sample,
+        y = Intensity,
+        fill = Sample
+    )) +
+    geom_boxplot() +
+    theme(
+        axis.text.x = element_text(angle = 90, 
+                hjust = 1, vjust = 0.5),
+                legend.position = "none"
+    ) +
+    labs(x = NULL,
+        y = "log2(Intensity)",
+        fill = NULL) +
+  facet_wrap(~norm)
+
+ggsave("intensity_distribution.png",
+    path = "plots",
+    intensity_distribution, width = 10,
+    height = 8, units = "in", dpi = 350)
+```
+
+Plot the error of the retention time across the m/z range.
+A better understanding of how retention time can be predicted is available in:
+>Al Musaimi O, Valenzo OMM, Williams DR. Prediction of peptides retention behavior in reversed-phase liquid chromatography based on their hydrophobicity. J Sep Sci. 2023 Jan;46(2):e2200743. doi: 10.1002/jssc.202200743. Epub 2022 Nov 14. PMID: 36349538; PMCID: PMC10098489.
+
+```
+RT_error <- diann_report %>%
+    ggplot(aes(x = Precursor.Mz, 
+                y = RT - Predicted.RT)) +
+    ggpointdensity::geom_pointdensity(size = 0.25) +
+    viridis::scale_color_viridis(option = "plasma") +
+    geom_hline(yintercept = c(1,0,-1), linetype = "dashed", color = "black") +
+    labs(
+        x = "Precursor Mz",
+        y = "RT - Predicted RT",
+        color = NULL
+    ) +
+    theme(legend.key.width = unit(2, "cm"),
+    legend.position = "bottom") +
+    facet_wrap(~Run)
+
+ggsave("RT_error.png",
+    path = "plots",
+    RT_error, width = 15,
+    height = 10, units = "in", dpi = 350)
+```
+
+Plot the Posterior Error Probability (PEP) density distribution per Run.
+
+```
+PEP_plot <- diann_report %>%
+    ggplot(aes(x = PEP)) +
+    geom_density(fill = "tomato") +
+    labs(
+        x = "PEP",
+        y = "Density",
+        fill = NULL
+    ) +
+    theme(legend.position = "none") +
+    facet_wrap(~Run)
+
+ggsave("PEP_density.png",
+    path = "plots",
+    PEP_plot, width = 15,
+    height = 10, units = "in", dpi = 350)
+```
+
+Plot the distribution of the FWHM per run
+From DIANN documantation:
+>**FWHM** estimated peak width at half-maximum; note that the accuracy of such estimates sometimes strongly depends on the DIA cycle time and sample injection amount, i.e. they can only be used to evaluate chromatographic performance in direct comparisons with similar settings, including the scan window; another caveat is that FWHM does not reflect any peak tailing.
+
+```
+FWHM_plot <- diann_report %>%
+    ggplot(aes(x = FWHM)) +
+    geom_density(fill = "tomato") +
+    labs(
+        x = "FWHM",
+        y = "Density",
+        fill = NULL
+    ) +
+    theme(legend.position = "none") +
+    facet_wrap(~Run)
+
+ggsave("FWHM_density.png",
+    path = "plots",
+    FWHM_plot, width = 15,
     height = 10, units = "in", dpi = 350)
 ```
