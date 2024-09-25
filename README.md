@@ -29,6 +29,7 @@ Information from DIANN documentation:
 - `PG.MaxLFQ.Quality:` when using QuantUMS reflects the quality of PG.MaxLFQ.
 
 Load the complete data from DIANN search using the arrow function `read_parquet()`.
+[!NOTE]
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
 ```
@@ -62,6 +63,7 @@ readr::write_tsv(unique_genes, "diann_matrix_QuantUMS.tsv")
 ```
 
 For the reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
+[!TIP]
 You can generate a new column for `condition, group, etc.` and add the `color = condition` to the `aes()`, for instance.
 
 ```
