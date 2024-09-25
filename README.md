@@ -28,7 +28,8 @@ Information from DIANN documentation:
 - `Empirical.Quality:` when using QuantUMS reflects the agreement of relative precursor quantities obtained using different quantitative features (MS1 / fragment ions).
 - `PG.MaxLFQ.Quality:` when using QuantUMS reflects the quality of PG.MaxLFQ.
 
-Load the complete data from DIANN search using the arrow function `read_parquet()`.
+Load the output data from DIANN search using the arrow function `read_parquet()`.
+
 [!NOTE]
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
