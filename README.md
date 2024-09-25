@@ -9,7 +9,7 @@ To have an in depth understanding of what is happening in this script, please ch
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
 
 Make sure you have the following packages installed and loaded:
-```r
+```
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow)  # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -84,7 +84,7 @@ ggsave("precursor_rt.png",
 ```
 
 Plot the m/z map to show the density of ions collected over the scan range and retention time.
-It can be very informative of instability in dpray or chromatographic setup in general.
+It can be very informative of instability in spray or chromatographic setup in general.
 
 ```
 mz_map_density_plot <- diann_report %>%
@@ -152,7 +152,7 @@ ggsave("proteins_plot.png",
     height = 10, units = "in", dpi = 350)
 ```
 
-Evaluate the sparsity profile for each sample.
+Evaluate the sparsity profile for each sample. If the sparsity is high in one sample, check the m/z map to understand why. 
 
 ```
 sparsity_plot <- unique_genes %>%
@@ -175,7 +175,9 @@ ggsave("sparsity_plot.png",
 ```
 
 Calculate the proportion of missing values and median abundance per sample and plot the correlation between them.
-This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biometry and Statistics). You will see that, depending on the normalization method used, the correlation will change.
+This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biometry and Statistics).
+You will see that, depending on the normalization method used, the correlation will change.
+Try to compare the normalization using scale and quantile, for instance.
 
 ```
 sample_abundance_vs_missing <- log2(unique_genes) %>%
@@ -206,6 +208,7 @@ ggsave("corr_mean_missing.png",
 Plot the log2 transformed abundance distribution before and after the normalization.
 
 The normalization methods available in `limma` package are: "none", "scale", "quantile", "cyclicloess", "Aquantile", "Gquantile", "Rquantile" or "Tquantile".
+
 From `limma` documentation:
 >Scale normalization was proposed by Yang et al (2001, 2002) and is further explained by Smyth and Speed (2003). The idea is simply to scale the log-ratios to have the same median-absolute-deviation (MAD) across arrays. This idea has also been implemented by the maNormScale function in the marray package. The implementation here is slightly different in that the MAD scale estimator is replaced with the median-absolute-value and the A-values are normalized as well as the M-values.
 
