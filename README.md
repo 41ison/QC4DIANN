@@ -320,3 +320,40 @@ ggsave("FWHM_density.png",
     FWHM_plot, width = 15,
     height = 10, units = "in", dpi = 350)
 ```
+
+### evaluate the digestion efficiency by plotting the missed cleavages
+We can separate the peptides by the specificity of the enzyme used in the digestion. In this case, we are using Trypsin, so we can evaluate the missed cleavages by the presence of K or R at the C-terminal of the peptide.
+
+```
+missed_cleavages <- diann_report %>%
+    dplyr::mutate(specificity = case_when(
+        str_detect(Stripped.Sequence, "K$|R$") ~ "Trypsin",
+        TRUE ~ "Unespecific")
+    ) %>%
+    group_by(Run, specificity) %>%
+    dplyr::summarise(
+        peptides = n()
+    ) %>%
+    ggplot(aes(x = Run, y = peptides,
+                fill = specificity)) +
+    geom_col(alpha = 0.7,
+            position = "dodge") +
+    geom_text(aes(label = peptides),
+        position = position_dodge(width = 1),
+        vjust = -0.25, size = 3) +
+    scale_fill_manual(values = c("Trypsin" = "tomato",
+                                "Unespecific" = "steelblue")) +
+    labs(
+        x = NULL,
+        y = "Count",
+        fill = "Specificity"
+    ) +
+    theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90,
+                        hjust = 1, vjust = 0.5))
+
+ggsave("missed_cleavages.png",
+    path = "plots",
+    missed_cleavages, width = 10,
+    height = 10, units = "in", dpi = 350)
+```
