@@ -13,7 +13,7 @@ To have an in depth understanding of what is happening in this script, please ch
 Maybe it is worth to check the [diann R package](https://github.com/vdemichev/diann-rpackage) that we are using to extract the matrix of abundance from the DIANN report with MaxLFQ values.
 
 Make sure you have the following packages installed and loaded:
-```
+```r
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow)  # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -36,7 +36,7 @@ Information from DIANN documentation:
 
 The File.Name column was removed from the output of the `report.parquet`, so we need to recreate it in order to make the file compatible with `dann_matrix()` function.
 
-```
+```r
 diann_report <- arrow::read_parquet("report.parquet") %>%
     dplyr::filter(PG.MaxLFQ.Quality >= 0.75 & Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
   dplyr::mutate(File.Name = Run)
@@ -61,7 +61,7 @@ proteins <- diann_report %>%
 If it is necessary to use the data in other pipelines, you can write a tsv file filtered for the whole data and for the matrix.
 The files will be saved in the working directory and can be inspected in Excel, for instance.
 
-```
+```r
 readr::write_tsv(diann_report, "diann_report_QuantUMS.tsv")
 readr::write_tsv(unique_genes, "diann_matrix_QuantUMS.tsv")
 ```
@@ -70,7 +70,7 @@ For the reconstruction of the ion chromatograms, the precursor quantity is plott
 
 :bulb: You can generate a new column for `condition, group, etc.` and add the `color = condition` to the `aes()`, for instance.
 
-```
+```r
 precursor_rt <- diann_report %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(aes(color = Run), show.legend = FALSE) +
@@ -90,7 +90,7 @@ ggsave("precursor_rt.png",
 Plot the m/z map to show the density of ions collected over the scan range and retention time.
 It can be very informative of instability in spray or chromatographic setup in general.
 
-```
+```r
 mz_map_density_plot <- diann_report %>%
     ggplot(aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.25) +
@@ -113,7 +113,7 @@ ggsave("mz_map_density_plot.png",
 
 The charge state distribution can be informative in experiments using FAIMS, for instance.
 
-```
+```r
 precursor_charge_density <- diann_report %>%
     ggplot(aes(x = Precursor.Charge, fill = Run)) +
     geom_density(alpha = 0.7, 
@@ -133,7 +133,7 @@ ggsave("precursor_charge_density.png",
 ```
 Counting the number of proteins per sample.
 
-```
+```r
 proteins_plot <- proteins %>%
     ggplot(aes(y = Run, x = n_proteins, fill = Run)) +
     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
@@ -158,7 +158,7 @@ ggsave("proteins_plot.png",
 
 Evaluate the sparsity profile for each sample. If the sparsity is high in one sample, check the m/z map to understand why. 
 
-```
+```r
 sparsity_plot <- unique_genes %>%
     as.data.frame() %>%
     naniar::vis_miss() +
@@ -183,7 +183,7 @@ This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biome
 You will see that, depending on the normalization method used, the correlation will change.
 Try to compare the normalization using scale and quantile, for instance.
 
-```
+```r
 sample_abundance_vs_missing <- log2(unique_genes) %>%
     as.data.frame() %>%
     gather(key = "Sample", value = "Intensity") %>%
@@ -216,7 +216,7 @@ The normalization methods available in `limma` package are: "none", "scale", "qu
 From `limma` documentation:
 >Scale normalization was proposed by Yang et al (2001, 2002) and is further explained by Smyth and Speed (2003). The idea is simply to scale the log-ratios to have the same median-absolute-deviation (MAD) across arrays. This idea has also been implemented by the maNormScale function in the marray package. The implementation here is slightly different in that the MAD scale estimator is replaced with the median-absolute-value and the A-values are normalized as well as the M-values.
 
-```
+```r
 df_long_raw <- unique_genes %>%
     log2() %>%
     as.data.frame() %>%
@@ -260,7 +260,7 @@ Plot the error of the retention time across the m/z range.
 A better understanding of how retention time can be predicted is available in:
 >Al Musaimi O, Valenzo OMM, Williams DR. Prediction of peptides retention behavior in reversed-phase liquid chromatography based on their hydrophobicity. J Sep Sci. 2023 Jan;46(2):e2200743. doi: 10.1002/jssc.202200743. Epub 2022 Nov 14. PMID: 36349538; PMCID: PMC10098489.
 
-```
+```r
 RT_error <- diann_report %>%
     ggplot(aes(x = Precursor.Mz, 
                 y = RT - Predicted.RT)) +
@@ -284,7 +284,7 @@ ggsave("RT_error.png",
 
 Plot the Posterior Error Probability (PEP) density distribution per Run.
 
-```
+```r
 PEP_plot <- diann_report %>%
     ggplot(aes(x = PEP)) +
     geom_density(fill = "tomato") +
@@ -307,7 +307,7 @@ Plot the distribution of the FWHM per run.
 Information from DIANN documentation:
 >**FWHM** estimated peak width at half-maximum; note that the accuracy of such estimates sometimes strongly depends on the DIA cycle time and sample injection amount, i.e. they can only be used to evaluate chromatographic performance in direct comparisons with similar settings, including the scan window; another caveat is that FWHM does not reflect any peak tailing.
 
-```
+```r
 FWHM_plot <- diann_report %>%
     ggplot(aes(x = FWHM)) +
     geom_density(fill = "tomato") +
@@ -328,7 +328,7 @@ ggsave("FWHM_density.png",
 ### evaluate the digestion efficiency by plotting the missed cleavages
 We can separate the peptides by the specificity of the enzyme used in the digestion. In this case, we are using Trypsin, so we can evaluate the missed cleavages by the presence of K or R at the C-terminal of the peptide.
 
-```
+```r
 missed_cleavages <- diann_report %>%
     dplyr::mutate(specificity = case_when(
         str_detect(Stripped.Sequence, "K$|R$") ~ "Trypsin",
