@@ -1,7 +1,7 @@
 ## Quality control analysis of DIA data using [DIA-NN 1.9.1](https://github.com/vdemichev/DiaNN/releases/tag/1.9.1) search results
 
 ### General information
-In this repository you will find the quarto markdown `**QC_report_DIANN.qmd**` for QC check from DIANN search results and the shiny app `**QC_report_DIANN_app.r**` that will help you to vizualise the results without coding skills. All you need to do is to download the `**QC_report_DIANN_app.r**`, open it in RStudio and click `**Run app**`. The app will start, then you browse the `report.parquet` file from DIANN. Naturally, make sure you have the required libraries installed in order to have the app working properly.
+In this repository you will find the quarto markdown **`QC_report_DIANN.qmd`** for QC check from DIANN search results and the shiny app **`QC_report_DIANN_app.r`** that will help you to vizualise the results without coding skills. All you need to do is to download the **`QC_report_DIANN_app.r`**, open it in RStudio and click **`Run app`**. The app will start, then you browse the `report.parquet` file from DIANN. Naturally, make sure you have the required libraries installed in order to have the app working properly.
 
 ### For the quarto markdown document
 Please, note that the column names are slightly different in `report.tsv` and `report.parquet` files. Some importante informations are only available in the `report.parquet`.
