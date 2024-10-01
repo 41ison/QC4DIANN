@@ -401,9 +401,6 @@ From the [pre-print](https://www.biorxiv.org/content/10.1101/2023.06.20.545604v1
 
 >"The idea here is that since each feature produces, for each acquisition, an estimate of the precursor quantity, the deviations between these estimates corresponding to different features are indicative of how accurate the quantity estimates are. QuantUMS hence tunes hyperparameters to minimise the empirically measured differences between quantity estimates obtained using different features."
 
-Demichev asking questions about the values of QuantUMS scores:
->"Basically, low values mean that something is wrong with quantity, high values don't guarantee that it is good though. In QuantUMS, high values mean that LC-MS-related error in the quantity is very likely negligible."
-
 ```r
 diann_report %>%
     plot_ly(x = ~PG.MaxLFQ.Quality, 
@@ -417,4 +414,31 @@ diann_report %>%
         zaxis = list(title = "Empirical Quality")
     )) %>%
     subplot()
+```
+
+Demichev asking questions about the values of QuantUMS scores said:
+
+>"Basically, low values mean that something is wrong with quantity, high values don't guarantee that it is good though. In QuantUMS, high values mean that LC-MS-related error in the quantity is very likely negligible."
+
+We can check the correlation between MS1 and MS2 chromatograms stratified by a defined empirical quality score. This will show that the correlation is lower for peptides with low empirical scores.
+
+```r
+EQScore_cutoff_plot <- diann_report %>%
+    dplyr::mutate(EQScore_cutoff = case_when(
+        Empirical.Quality >= 0.75 ~ "≥ 0.75",
+        TRUE ~ "< 0.75")
+    ) %>%
+    ggplot() +
+    geom_density(aes(x = Ms1.Profile.Corr, fill = EQScore_cutoff), alpha = 0.7) +
+    scale_fill_manual(values = c("tomato", "steelblue")) +
+    labs(x = "MS1 Profile Correlation",
+        y = "Density",
+        fill = "Correlation between MS1 and MS2 chromatograms") +
+    theme(legend.position = "top") +
+    facet_wrap(~Run)
+
+ggsave("EQScore_cutoff_plot.png",
+    path = "plots",
+    EQScore_cutoff_plot, width = 10,
+    height = 10, units = "in", dpi = 350)
 ```
