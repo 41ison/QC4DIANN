@@ -394,11 +394,14 @@ ggsave("missed_cleavages.png",
 
 ### Evaluate the distribution of the QunatUMS scores in a 3D plot
 
-The QuantUMS scores from DIANN are used to evaluate the quality of the data.
+The QuantUMS scores from DIANN are used to evaluate the quality of the data. DIANN calculates three different scores: quantity quality, empirical quality and PG MaxLFQ quality. Filtering by the empirical quality has the most significant impact on the data, while the other two only impacts in a small proportion.
 
 From the [pre-print](https://www.biorxiv.org/content/10.1101/2023.06.20.545604v1), the QuantUMS is explained as follows:
 
 >"The idea here is that since each feature produces, for each acquisition, an estimate of the precursor quantity, the deviations between these estimates corresponding to different features are indicative of how accurate the quantity estimates are. QuantUMS hence tunes hyperparameters to minimise the empirically measured differences between quantity estimates obtained using different features."
+
+Demichev asking question about the values of QuantUMS scores:
+>"Basically, low values mean that something is wrong with quantity, high values don't guarantee that it is good though. In QuantUMS, high values mean that LC-MS-related error in the quantity is very likely negligible."
 
 ```r
 diann_report %>%
