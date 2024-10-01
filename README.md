@@ -131,6 +131,36 @@ ggsave("precursor_charge_density.png",
     precursor_charge_density, width = 10,
     height = 10, units = "in", dpi = 350)
 ```
+
+Counting the number of peptides per sample.
+
+```r
+peptides_plot <- diann_report %>%
+    dplyr::group_by(Run) %>%
+    dplyr::summarise(
+        n_pepetides = n_distinct(Stripped.Sequence)
+    ) %>%
+    ggplot(aes(y = Run, x = n_peptides, fill = Run)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+    geom_vline(xintercept = 40000, linetype = "dashed", color = "black") + # replace the 40000 with a threshold of interest
+    geom_text(aes(label = n_peptides),
+        color = "white", size = 5,
+        hjust = 1, nudge_x = -0.5
+        ) +
+    labs(y = NULL,
+        x = "Number of peptides",
+        fill = NULL) +
+    theme(axis.text.x = element_text(angle = 90,
+                        vjust = 0.5,
+                        hjust = 1)
+    )
+
+ggsave("peptides_plot.png",
+    path = "plots",
+    peptides_plot, width = 10,
+    height = 10, units = "in", dpi = 350)
+```
+
 Counting the number of proteins per sample.
 
 ```r
@@ -282,7 +312,7 @@ ggsave("RT_error.png",
     height = 10, units = "in", dpi = 350)
 ```
 
-Plot the Posterior Error Probability (PEP) density distribution per Run.
+Plot the Posterior Error Probability (PEP) density distribution per Run. This is a estimation of local FDR.
 
 ```r
 PEP_plot <- diann_report %>%
@@ -360,4 +390,27 @@ ggsave("missed_cleavages.png",
     path = "plots",
     missed_cleavages, width = 10,
     height = 10, units = "in", dpi = 350)
+```
+
+### Evaluate the distribution of the QunatUMS scores in a 3D plot
+
+The QuantUMS scores from DIANN are used to evaluate the quality of the data.
+
+From the [pre-print](https://www.biorxiv.org/content/10.1101/2023.06.20.545604v1), the QuantUMS is explained as follows:
+
+>"The idea here is that since each feature produces, for each acquisition, an estimate of the precursor quantity, the deviations between these estimates corresponding to different features are indicative of how accurate the quantity estimates are. QuantUMS hence tunes hyperparameters to minimise the empirically measured differences between quantity estimates obtained using different features."
+
+```r
+diann_report %>%
+    plot_ly(x = ~PG.MaxLFQ.Quality, 
+        y = ~Quantity.Quality, 
+        z = ~Empirical.Quality,
+            color = ~Run, alpha = 0.7,
+            type = "scatter3d", mode = "markers") %>%
+    layout(scene = list(
+        xaxis = list(title = "PG MaxLFQ Quality"),
+        yaxis = list(title = "Quantity Quality"),
+        zaxis = list(title = "Empirical Quality")
+    )) %>%
+    subplot()
 ```
