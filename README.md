@@ -59,6 +59,21 @@ proteins <- diann_report %>%
     )
 ```
 
+❕**Troubleshooting**
+
+If you are using a macOS the function `read_parquet()` from {arrow} package maybe will not work, you can do as follow to solve the error and get everything working:
+- Download the {arrow} package from the CRAN repository to avoid timeout issues.
+- Set the environment variable to enable `zstd` support.
+- Install the package from the local file.
+
+```r
+Sys.setenv(LIBARROW_MINIMAL = "false", ARROW_WITH_ZSTD = "ON")
+
+# Install the package from your local file
+install.packages("/Users/chaves/Downloads/arrow_17.0.0.1.tgz",
+                    repos = NULL, type = "source", force = TRUE)
+```
+
 If it is necessary to use the data in other pipelines, you can write a tsv file filtered for the whole data and for the matrix.
 The files will be saved in the working directory and can be inspected in Excel, for instance.
 
