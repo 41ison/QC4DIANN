@@ -399,7 +399,7 @@ The QuantUMS scores from DIANN are used to evaluate the quality of the data. DIA
 
 From the [pre-print](https://www.biorxiv.org/content/10.1101/2023.06.20.545604v1), the QuantUMS is explained as follows:
 
->"The idea here is that since each feature produces, for each acquisition, an estimate of the precursor quantity, the deviations between these estimates corresponding to different features are indicative of how accurate the quantity estimates are. QuantUMS hence tunes hyperparameters to minimise the empirically measured differences between quantity estimates obtained using different features."
+>"The idea here is that since each feature produces, for each acquisition, an estimate of the precursor quantity, the deviations between these estimates corresponding to different features are indicative of how accurate the quantity estimates are. QuantUMS hence tunes hyperparameters to minimise the empirically measured differences between quantity estimates obtained using different features." (Kistner et al., 2023).
 
 ```r
 diann_report %>%
