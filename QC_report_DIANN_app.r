@@ -1,19 +1,16 @@
 ## Dashboard QC report for DIANN search results
 
 # Load required libraries
-library(shiny)
-library(shinydashboard)
-library(diann)
-library(arrow)
-library(tidyverse)
-library(ggpointdensity)
-library(limma)
+library(shiny)            # from CRAN
+library(shinydashboard)   # from CRAN
+library(diann)            # from GitHub
+library(arrow)            # from CRAN
+library(tidyverse)        # from CRAN
+library(ggpointdensity)   # from GitHub
+library(limma)            # from Bioconductor
 
 # Increase the maximum filde size to 200 MB
-options(shiny.maxRequestSize = 200 * 1024^2)
-
-# check the number of cores available
-parallel::detectCores()
+options(shiny.maxRequestSize = 300 * 1024^2)
 
 # Define UI for application that reads a parquet file and generates a QC report dashboard
 ui <- dashboardPage(
