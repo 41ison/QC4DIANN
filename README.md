@@ -61,7 +61,7 @@ proteins <- diann_report %>%
 
 ❕**Troubleshooting**
 
-If you are using a macOS the function `read_parquet()` from {arrow} package maybe will not work, you can do as follow to solve the error and get everything working:
+If you are using a macOS, the `read_parquet()` function from the {arrow} package may not work, you can do the following to solve the error and get everything working:
 - Download the {arrow} package from the CRAN repository to avoid timeout issues.
 - Set the environment variable to enable `zstd` support.
 - Install the package from the local file.
