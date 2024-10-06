@@ -1,22 +1,46 @@
 ## Dashboard QC report for DIANN search results
+## Alison Felipe Alencar Chaves
 
 # Load required libraries
-library(shiny)            # from CRAN
-library(shinydashboard)   # from CRAN
-library(diann)            # from GitHub
-library(arrow)            # from CRAN
-library(tidyverse)        # from CRAN
-library(ggpointdensity)   # from GitHub
-library(limma)            # from Bioconductor
+library(shiny)
+library(shinydashboard)
+library(diann)
+library(arrow)
+library(tidyverse)
+library(ggpointdensity)
+library(limma)
+library(vegan)
+library(lsa)
+library(plotly)
+library(viridis)
 
 # Increase the maximum filde size to 200 MB
-options(shiny.maxRequestSize = 300 * 1024^2)
+options(shiny.maxRequestSize = 200 * 1024^2)
+
+# set the general theme for the plots
+theme_set(theme_bw())
+theme_update(
+  text = element_text(color = "black"),
+  axis.text = element_text(color = "black"),
+  axis.title = element_text(color = "black", face = "bold"),
+  strip.text = element_text(face = "bold"),
+  legend.title = element_text(face = "bold", hjust = 0.5),
+  legend.title.position = "top"
+)
 
 # Define UI for application that reads a parquet file and generates a QC report dashboard
 ui <- dashboardPage(
 
   dashboardHeader(
-      title = "QC Reporting dashboard for DIANN search results", titleWidth = "400"
+      title = "QC Reporting dashboard for DIANN search results", titleWidth = "400",
+      dropdownMenu(
+        type = "messages",
+        messageItem(
+          from = "Support",
+          message = "felipealison@gmail.com",
+          icon = icon("envelope")
+        )
+      )
   ),
 
   dashboardSidebar(
@@ -24,7 +48,10 @@ ui <- dashboardPage(
       menuItem("QuantUMS filters", tabName = "filters", icon = icon("filter")),
       fileInput(inputId = "report", label = "Choose Parquet File", accept = ".parquet"),
       sliderInput("PG.MaxLFQ.Quality", "PG MaxLFQ Quality score", min = 0, max = 1, value = 0.75, step = 0.05),
-      sliderInput("Empirical.Quality", "Empirical Quality score", min = 0, max = 1, value = 0, step = 0.05)
+      sliderInput("Empirical.Quality", "Empirical Quality score", min = 0, max = 1, value = 0, step = 0.05),
+      menuItem("Interactive viewer", tabName = "protein", icon = icon("equalizer", lib = "glyphicon")),
+      selectInput("xcol", "X Sample", choices = NULL),
+      selectInput("ycol", "Y Sample", choices = NULL)
     )
   ),
   
@@ -45,32 +72,34 @@ ui <- dashboardPage(
                 box(title = "Missed cleavage sites", status = "primary", solidHeader = TRUE, plotOutput("plot10"), collapsible = TRUE),
                 box(title = "MS1 Profile Correlation", status = "primary", solidHeader = TRUE, plotOutput("plot11"), collapsible = TRUE),
                 box(title = "QuantUMS scores distribution", status = "primary", solidHeader = TRUE, plotOutput("plot12"), collapsible = TRUE)
+              )
+      ),
+      tabItem(tabName = "protein",
+              fluidRow(
+                box(title = "Sample correlation - Non-normalized log2(Intensity)", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("Corr_xy"), collapsible = FALSE),
+                tabBox(
+                  title = "Similarity metrics", side = "right", height = 600,
+                  tabPanel("Cosine similarity", plotOutput("cosine_similarity")),
+                  tabPanel("Euclidean distance", plotOutput("euclidean_distance")),
+                  tabPanel("Jaccard similarity", plotOutput("jaccard_similarity"))
+                ),
+                box(title = "QuantUMS score distribution", status = "primary", height = 600, width = 12, solidHeader = TRUE, plotlyOutput("QuantUMS_dist"), collapsible = FALSE)
+          )
       )
     )
   )
 )
-  )
 
 # Define server logic required to read the parquet file and generate the QC report
-server <- function(input, output) {
-
-# set the general theme for the plots
-  theme_set(theme_bw())
-  theme_update(
-    text = element_text(color = "black"),
-    axis.text = element_text(color = "black"),
-    axis.title = element_text(color = "black", face = "bold"),
-    strip.text = element_text(face = "bold"),
-    legend.title = element_text(face = "bold", hjust = 0.5),
-    legend.title.position = "top"
-  )
+server <- function(input, output, session) {
 
   # Reactive expression to read and pre-process the uploaded parquet file
   data <- reactive({
     req(input$report)
     diann_report <- arrow::read_parquet(input$report$datapath) %>%
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
-      dplyr::mutate(File.Name = Run)
+      dplyr::mutate(File.Name = Run) %>%
+      dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality)
   })
 
   # Reactive expression to filter number of proteins based on the input filters
@@ -102,13 +131,20 @@ server <- function(input, output) {
     # Reactive expression to filter matrix of protein abundance based on the input filters
     unique_genes <- reactive({
     req(data())
-    diann::diann_matrix(data() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality),
+    diann::diann_matrix(data(),
       id.header = "Protein.Ids",
       quantity.header = "Genes.MaxLFQ.Unique",
       proteotypic.only = FALSE,
       pg.q = .01
     )
+  })
+
+  # Observe the uploaded file and update selectInput choices
+  observe({
+    req(unique_genes())
+    colnames <- colnames(unique_genes())
+    updateSelectInput(session, "xcol", choices = colnames)
+    updateSelectInput(session, "ycol", choices = colnames)
   })
 
   # Reactive expression to combine the raw and MAD normalised data
@@ -142,7 +178,7 @@ combined_data <- reactive({
   })
 
 output$info_box1 <- renderInfoBox({
-    infoBox("The data is been pre-filtered based on the following criteria: Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01 and PG.Q.Value ≤ 0.01 and the following quality scores:",
+    infoBox(title = "The filters Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01 and PG.Q.Value ≤ 0.01 are active.",
             paste("PG MaxLFQ Quality score ≥ ", input$PG.MaxLFQ.Quality),
             paste("Empirical Quality score ≥ ", input$Empirical.Quality),
             icon = icon("filter"),
@@ -150,11 +186,94 @@ output$info_box1 <- renderInfoBox({
     )
   })
 
+MS_corr <- reactive({
+  req(input$report)
+  MS_correlation <- arrow::read_parquet(input$report$datapath) %>%
+    dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
+    dplyr::mutate(File.Name = Run)
+})
+
+# calculate the cosine similarity in the matrix and plot the heatmap
+output$cosine_similarity <- renderPlot({
+    unique_genes() %>%
+    log2() %>%
+    na.omit() %>%
+    lsa::cosine() %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(-Sample, names_to = "Match", values_to = "value") %>%
+    dplyr::mutate(Similarity = "Cosine similarity") %>%
+    ggplot() +
+    geom_tile(aes(x = Sample, y = Match, fill = value)) +
+    viridis::scale_fill_viridis(option = "E") +
+    theme(text = element_text(size = 20),
+        axis.text.x = element_text(angle = 90,
+                        hjust = 1, vjust = 0.5),
+        axis.text.y = element_text(angle = 0,
+                        hjust = 1, vjust = 0.5),
+        legend.position = "bottom",
+        legend.key.width = unit(2.5, "cm")) +
+    labs(x = NULL,
+        y = NULL,
+        fill = "Cosine similarity")
+})
+
+# calculate the euclidean distance in the matrix and plot the heatmap
+output$euclidean_distance <- renderPlot({
+    unique_genes() %>%
+    log2() %>%
+    t() %>%
+    dist(method = "euclidean") %>%
+    as.matrix() %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(-Sample, names_to = "Match", values_to = "value") %>%
+    dplyr::mutate(Similarity = "Euclidean distance") %>%
+    ggplot() +
+    geom_tile(aes(x = Sample, y = Match, fill = value)) +
+    viridis::scale_fill_viridis(option = "E") +
+    theme(text = element_text(size = 20),
+    axis.text.x = element_text(angle = 90,
+                        hjust = 1, vjust = 0.5),
+        axis.text.y = element_text(angle = 0,
+                        hjust = 1, vjust = 0.5),
+        legend.position = "bottom",
+        legend.key.width = unit(2.5, "cm")) +
+    labs(x = NULL,
+        y = NULL,
+        fill = "Euclidean distance")
+        })
+
+# calculate the Jaccard similarity in the matrix and plot the heatmap
+output$jaccard_similarity <- renderPlot({
+    unique_genes() %>%
+    log2() %>%
+    t() %>%
+    vegan::vegdist(method = "jaccard", na.rm = TRUE) %>%
+    as.matrix() %>%
+    as.data.frame(as.table(.)) %>% 
+    dplyr::mutate(Sample = colnames(.)) %>%
+    pivot_longer(-Sample, names_to = "Match", values_to = "value") %>%
+    dplyr::mutate(Similarity = "Jaccard similarity") %>%
+    ggplot() +
+    geom_tile(aes(x = Sample, y = Match, fill = value)) +
+    viridis::scale_fill_viridis(option = "E") +
+    theme(text = element_text(size = 20),
+    axis.text.x = element_text(angle = 90,
+                        hjust = 1, vjust = 0.5),
+        axis.text.y = element_text(angle = 0,
+                        hjust = 1, vjust = 0.5),
+        legend.position = "bottom",
+        legend.key.width = unit(2.5, "cm")) +
+    labs(x = NULL,
+        y = NULL,
+        fill = "Jaccard similarity")
+})
+
   # Render plots
   output$plot1 <- renderPlot({
     data() %>%
     as.data.frame() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(color = "darkblue", alpha = 0.7, show.legend = FALSE) +
     labs(
@@ -162,13 +281,12 @@ output$info_box1 <- renderInfoBox({
         y = "Precursor quantity",
         color = NULL
     ) +
-    facet_wrap(~Run)
+    facet_wrap(~Run, scales = "free_y")
   })
   
   output$plot2 <- renderPlot({
     data() %>%
     as.data.frame() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
     ggplot(aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.25) +
     viridis::scale_color_viridis(option = "plasma") +
@@ -185,7 +303,6 @@ output$info_box1 <- renderInfoBox({
   output$plot3 <- renderPlot({
     data() %>%
     as.data.frame() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
     ggplot(aes(x = Precursor.Charge)) +
     geom_density(alpha = 0.7, 
             stat = "density", fill = "darkblue",
@@ -211,7 +328,8 @@ output$info_box1 <- renderInfoBox({
     labs(y = NULL,
         x = "Number of peptides",
         fill = NULL) +
-    theme(axis.text.x = element_text(angle = 90,
+    theme(
+      axis.text.x = element_text(angle = 90,
                         vjust = 0.5,
                         hjust = 1)
     )
@@ -230,7 +348,8 @@ output$info_box1 <- renderInfoBox({
     labs(y = NULL,
         x = "Number of proteins",
         fill = NULL) +
-    theme(axis.text.x = element_text(angle = 90,
+    theme(
+      axis.text.x = element_text(angle = 90,
                         vjust = 0.5,
                         hjust = 1)
     )
@@ -303,7 +422,6 @@ output$info_box1 <- renderInfoBox({
   output$plot9 <- renderPlot({
     data() %>%
     as.data.frame() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
     ggplot(aes(x = Precursor.Mz, 
                 y = RT - Predicted.RT)) +
     ggpointdensity::geom_pointdensity(size = 0.25) +
@@ -322,7 +440,6 @@ output$info_box1 <- renderInfoBox({
   output$plot10 <- renderPlot({
     data() %>%
     as.data.frame() %>%
-    dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
      dplyr::mutate(specificity = case_when(
         str_detect(Stripped.Sequence, "K$|R$") ~ "Specific C-termini",
         TRUE ~ "Missed C-termini")
@@ -351,7 +468,7 @@ output$info_box1 <- renderInfoBox({
   })
 
 output$plot11 <- renderPlot({
-    data() %>%
+    MS_corr() %>% 
     as.data.frame() %>%
     dplyr::mutate(EQScore_cutoff = case_when(
         .$Empirical.Quality >= input$Empirical.Quality ~ "Above threshold",
@@ -377,6 +494,37 @@ output$plot12 <- renderPlot({
         fill = NULL) +
     theme(legend.position = "bottom") +
     facet_wrap(~Run)
+  })
+
+output$QuantUMS_dist <- renderPlotly({
+    data() %>%
+    plot_ly(x = ~PG.MaxLFQ.Quality, 
+            y = ~Quantity.Quality, 
+            z = ~Empirical.Quality,
+            color = ~Run,
+            alpha = 0.6,
+            colors = viridis::viridis(256),
+            type = "scatter3d",
+            mode = "markers") %>%
+    layout(scene = list(
+        xaxis = list(title = "PG MaxLFQ Quality"),
+        yaxis = list(title = "Quantity Quality"),
+        zaxis = list(title = "Empirical Quality")
+    )) %>%
+    subplot()
+  })
+
+# plot the sample correlation using the columns from the selectInput
+output$Corr_xy <- renderPlotly({
+    unique_genes() %>%
+    log2() %>%
+    as.data.frame() %>%
+    ggplot(aes(x = !!sym(input$xcol), y = !!sym(input$ycol))) +
+    geom_point(alpha = 0.7, show.legend = FALSE) +
+    geom_smooth(method = "lm", se = FALSE,
+        color = "darkblue") +
+    labs(x = paste0("Log2(", input$xcol, ")"),
+        y = paste0("Log2(", input$ycol, ")"))
   })
 
 }
