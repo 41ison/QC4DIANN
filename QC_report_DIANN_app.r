@@ -13,6 +13,7 @@ library(vegan)
 library(lsa)
 library(plotly)
 library(viridis)
+library(ggfortify)
 
 # Increase the maximum filde size to 200 MB
 options(shiny.maxRequestSize = 200 * 1024^2)
@@ -76,14 +77,15 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "protein",
               fluidRow(
-                box(title = "Sample correlation - Non-normalized log2(Intensity)", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("Corr_xy"), collapsible = FALSE),
+                box(title = "Sample correlation - Non-normalized log2(Intensity)", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("plot13"), collapsible = FALSE),
                 tabBox(
                   title = "Similarity metrics", side = "right", height = 600,
                   tabPanel("Cosine similarity", plotOutput("cosine_similarity")),
                   tabPanel("Euclidean distance", plotOutput("euclidean_distance")),
                   tabPanel("Jaccard similarity", plotOutput("jaccard_similarity"))
                 ),
-                box(title = "QuantUMS score distribution", status = "primary", height = 600, width = 12, solidHeader = TRUE, plotlyOutput("QuantUMS_dist"), collapsible = FALSE)
+                box(title = "QuantUMS score distribution", status = "primary", height = 600, width = 12, solidHeader = TRUE, plotlyOutput("QuantUMS_dist"), collapsible = FALSE),
+                box(title = "Principal Component Analysis", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("PCA"), collapsible = FALSE)
           )
       )
     )
@@ -222,6 +224,24 @@ MS_corr <- reactive({
     dplyr::mutate(File.Name = Run)
 })
 
+  PCA_label <- reactive({
+  unique_genes() %>%
+  log2() %>%
+  na.omit() %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "Sample")
+})
+
+pca_data <- reactive({
+    unique_genes() %>%
+    log2() %>%
+    na.omit() %>%
+    t() %>%
+    prcomp(., scale. = TRUE) %>%
+    autoplot(data = PCA_label(), colour = "Sample", label = TRUE)
+})
+  
 # calculate the cosine similarity in the matrix and plot the heatmap
 output$cosine_similarity <- renderPlot({
     unique_genes() %>%
@@ -536,7 +556,7 @@ output$QuantUMS_dist <- renderPlotly({
   })
 
 # plot the sample correlation using the columns from the selectInput
-output$Corr_xy <- renderPlotly({
+output$plot13 <- renderPlotly({
     unique_genes() %>%
     log2() %>%
     as.data.frame() %>%
@@ -548,6 +568,11 @@ output$Corr_xy <- renderPlotly({
         y = paste0("Log2(", input$ycol, ")"))
   })
 
+  # plot the PCA
+output$PCA <- renderPlotly({
+    pca_data()
+  })
+  
 }
 
 # Run the application
