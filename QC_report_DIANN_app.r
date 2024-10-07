@@ -177,6 +177,35 @@ combined_data <- reactive({
                     values_to = "Score")
   })
 
+  missing_vs_mean <- reactive({
+    unique_genes() %>%
+    log2() %>%
+    as.data.frame() %>%
+    gather(key = "Sample", value = "Intensity") %>%
+    dplyr::mutate(missing = is.na(Intensity)) %>%
+    dplyr::group_by(Sample) %>%
+    dplyr::summarise(
+        missing = mean(missing) * 100,
+        median_intensity = median(Intensity, na.rm = TRUE)
+    ) %>%
+    dplyr::mutate(norm = "Non normalised") %>%
+    bind_rows(
+      unique_genes() %>%
+        log2() %>%
+        limma::normalizeBetweenArrays(method = "scale") %>%
+        as.data.frame() %>%
+        gather(key = "Sample", value = "Intensity") %>%
+        dplyr::mutate(missing = is.na(Intensity)) %>%
+        dplyr::group_by(Sample) %>%
+        dplyr::summarise(
+            missing = mean(missing) * 100,
+            median_intensity = median(Intensity, na.rm = TRUE)
+        ) %>%
+        dplyr::mutate(norm = "MAD normalised")
+    ) %>%
+    dplyr::mutate(norm = factor(norm, levels = c("Non normalised", "MAD normalised")))
+  })
+  
 output$info_box1 <- renderInfoBox({
     infoBox(title = "The filters Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01 and PG.Q.Value ≤ 0.01 are active.",
             paste("PG MaxLFQ Quality score ≥ ", input$PG.MaxLFQ.Quality),
@@ -378,23 +407,15 @@ output$jaccard_similarity <- renderPlot({
   })
 
   output$plot7 <- renderPlot({
-    unique_genes() %>%
-    log2() %>%
-    as.data.frame() %>%
-    gather(key = "Sample", value = "Intensity") %>%
-    dplyr::mutate(missing = is.na(Intensity)) %>%
-    dplyr::group_by(Sample) %>%
-    dplyr::summarise(
-        missing = mean(missing) * 100,
-        median_intensity = median(Intensity, na.rm = TRUE)
-    ) %>%
+    missing_vs_mean() %>%
     ggplot(aes(x = missing, y = median_intensity)) +
     geom_point(alpha = 0.7, size = 3) +
     geom_smooth(method = "lm", se = FALSE,
         color = "darkblue") +
     labs(x = "Proportion of missing values (%)",
         y = "Mean log2(abundance)",
-        color = NULL)
+        color = NULL) +
+    facet_wrap(~norm)
   })
 
   output$plot8 <- renderPlot({
