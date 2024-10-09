@@ -52,7 +52,9 @@ ui <- dashboardPage(
       sliderInput("Empirical.Quality", "Empirical Quality score", min = 0, max = 1, value = 0, step = 0.05),
       menuItem("Interactive viewer", tabName = "protein", icon = icon("equalizer", lib = "glyphicon")),
       selectInput("xcol", "X Sample", choices = NULL),
-      selectInput("ycol", "Y Sample", choices = NULL)
+      selectInput("ycol", "Y Sample", choices = NULL),
+      downloadButton("download", "Download filtered matrix", class = "butt"),
+      tags$head(tags$style(".butt{background:grey;} .butt{color: #337ab7;}"))
     )
   ),
   
@@ -241,6 +243,16 @@ pca_data <- reactive({
     prcomp(., scale. = TRUE) %>%
     autoplot(data = PCA_label(), colour = "Sample", label = TRUE)
 })
+
+  # download the filtered matrix
+output$download <- downloadHandler(
+    filename = function() {
+        paste0(input$report, ".tsv")
+    },
+    content = function(file) {
+        readr::write_tsv(as.data.frame(unique_genes()) %>% rownames_to_column("protein_id"), file)
+    }
+)
   
 # calculate the cosine similarity in the matrix and plot the heatmap
 output$cosine_similarity <- renderPlot({
