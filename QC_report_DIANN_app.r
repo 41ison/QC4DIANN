@@ -1,5 +1,6 @@
 ## Dashboard QC report for DIANN search results
 ## Alison Felipe Alencar Chaves
+## For a detailed explanation see: https://github.com/41ison/QC4DIANN
 
 # Load required libraries
 library(shiny)
@@ -15,8 +16,8 @@ library(plotly)
 library(viridis)
 library(ggfortify)
 
-# Increase the maximum filde size to 200 MB
-options(shiny.maxRequestSize = 200 * 1024^2)
+# Increase the maximum file size to 900 MB
+options(shiny.maxRequestSize = 900 * 1024^2)
 
 # set the general theme for the plots
 theme_set(theme_bw())
@@ -29,7 +30,7 @@ theme_update(
   legend.title.position = "top"
 )
 
-# Define UI for application that reads a parquet file and generates a QC report dashboard
+# Define User Interface (UI) for application that reads a parquet file and generates a QC report dashboard
 ui <- dashboardPage(
 
   dashboardHeader(
@@ -86,7 +87,7 @@ ui <- dashboardPage(
                   tabPanel("Euclidean distance", plotOutput("euclidean_distance")),
                   tabPanel("Jaccard similarity", plotOutput("jaccard_similarity"))
                 ),
-                box(title = "QuantUMS score distribution", status = "primary", height = 600, width = 12, solidHeader = TRUE, plotlyOutput("QuantUMS_dist"), collapsible = FALSE),
+                box(title = "QuantUMS score distribution", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("QuantUMS_dist"), collapsible = FALSE),
                 box(title = "Principal Component Analysis", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("PCA"), collapsible = FALSE)
           )
       )
