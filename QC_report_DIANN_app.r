@@ -1,6 +1,6 @@
 ## Dashboard QC report for DIANN search results
 ## Alison Felipe Alencar Chaves
-## For a detailed explanation see: https://github.com/41ison/QC4DIANN
+## For detailed explanation, check out the GitHub repository: https://github.com/41ison/QC4DIANN
 
 # Load required libraries
 library(shiny)
@@ -30,7 +30,7 @@ theme_update(
   legend.title.position = "top"
 )
 
-# Define User Interface (UI) for application that reads a parquet file and generates a QC report dashboard
+# Define UI for application that reads a parquet file and generates a QC report dashboard
 ui <- dashboardPage(
 
   dashboardHeader(
@@ -66,21 +66,23 @@ ui <- dashboardPage(
                 infoBoxOutput("info_box1", width = 12),
                 box(title = "Reconstruction of XIC", status = "primary", solidHeader = TRUE, plotOutput("plot1"), collapsible = TRUE),
                 box(title = "Density of ions", status = "primary", solidHeader = TRUE, plotOutput("plot2"), collapsible = TRUE),
-                box(title = "Charge state distribution", status = "primary", solidHeader = TRUE, plotOutput("plot3"), collapsible = TRUE),
-                box(title = "Peptides per sample", status = "primary", solidHeader = TRUE, plotOutput("plot4"), collapsible = TRUE),
-                box(title = "Proteins per sample", status = "primary", solidHeader = TRUE, plotOutput("plot5"), collapsible = TRUE),
-                box(title = "Sparsity profile", status = "primary", solidHeader = TRUE, plotOutput("plot6"), collapsible = TRUE),
-                box(title = "Missing vs median abundance", status = "primary", solidHeader = TRUE, plotOutput("plot7"), collapsible = TRUE),
-                box(title = "Abundance before and after MAD normalization", status = "primary", solidHeader = TRUE, plotOutput("plot8"), collapsible = TRUE),
-                box(title = "Retention time error", status = "primary", solidHeader = TRUE, plotOutput("plot9"), collapsible = TRUE),
-                box(title = "Missed cleavage sites", status = "primary", solidHeader = TRUE, plotOutput("plot10"), collapsible = TRUE),
-                box(title = "MS1 Profile Correlation", status = "primary", solidHeader = TRUE, plotOutput("plot11"), collapsible = TRUE),
-                box(title = "QuantUMS scores distribution", status = "primary", solidHeader = TRUE, plotOutput("plot12"), collapsible = TRUE)
+                box(title = "Retention time error", status = "primary", solidHeader = TRUE, plotOutput("plot3"), collapsible = TRUE),
+                box(title = "Charge state distribution", status = "primary", solidHeader = TRUE, plotOutput("plot4"), collapsible = TRUE),
+                box(title = "Peptide length", status = "primary", solidHeader = TRUE, plotOutput("plot5"), collapsible = TRUE),
+                box(title = "Peptides per sample", status = "primary", solidHeader = TRUE, plotOutput("plot6"), collapsible = TRUE),
+                box(title = "Proteins per sample", status = "primary", solidHeader = TRUE, plotOutput("plot7"), collapsible = TRUE),
+                box(title = "Sparsity profile", status = "primary", solidHeader = TRUE, plotOutput("plot8"), collapsible = TRUE),
+                box(title = "Missing vs median abundance", status = "primary", solidHeader = TRUE, plotOutput("plot9"), collapsible = TRUE),
+                box(title = "Abundance before and after MAD normalization", status = "primary", solidHeader = TRUE, plotOutput("plot10"), collapsible = TRUE),
+                box(title = "Missed cleavage sites", status = "primary", solidHeader = TRUE, plotOutput("plot11"), collapsible = TRUE),
+                box(title = "MS1 Profile Correlation", status = "primary", solidHeader = TRUE, plotOutput("plot12"), collapsible = TRUE),
+                box(title = "QuantUMS scores distribution", status = "primary", solidHeader = TRUE, plotOutput("plot13"), collapsible = TRUE),
+                box(title = "Gene quantity distribution", status = "primary", solidHeader = TRUE, plotOutput("plot14"), collapsible = TRUE)
               )
       ),
       tabItem(tabName = "protein",
               fluidRow(
-                box(title = "Sample correlation - Non-normalized log2(Intensity)", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("plot13"), collapsible = FALSE),
+                box(title = "Sample correlation - Non-normalized log2(Intensity)", status = "primary", height = 600, solidHeader = TRUE, plotlyOutput("Corr"), collapsible = FALSE),
                 tabBox(
                   title = "Similarity metrics", side = "right", height = 600,
                   tabPanel("Cosine similarity", plotOutput("cosine_similarity")),
@@ -103,7 +105,8 @@ server <- function(input, output, session) {
     req(input$report)
     diann_report <- arrow::read_parquet(input$report$datapath) %>%
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
-      dplyr::mutate(File.Name = Run) %>%
+      dplyr::mutate(File.Name = Run,
+                    peptide_length = nchar(Stripped.Sequence)) %>%
       dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality)
   })
 
@@ -152,7 +155,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "ycol", choices = colnames)
   })
 
-  # Reactive expression to combine the raw and MAD normalised data
+  # Reactive expression to combine the raw and MAD normalized data
 combined_data <- reactive({
   req(unique_genes())
   unique_genes() %>%
@@ -182,6 +185,15 @@ combined_data <- reactive({
                     values_to = "Score")
   })
 
+  gene_quantity <- reactive({
+    req(data())
+    data() %>%
+      dplyr::select(Run, PG.MaxLFQ, Genes.MaxLFQ, Genes.MaxLFQ.Unique) %>%
+      pivot_longer(-Run,
+                   names_to = "protein_metrics",
+                   values_to = "quantity")
+  })
+  
   missing_vs_mean <- reactive({
     unique_genes() %>%
     log2() %>%
@@ -210,7 +222,7 @@ combined_data <- reactive({
     ) %>%
     dplyr::mutate(norm = factor(norm, levels = c("Non normalised", "MAD normalised")))
   })
-  
+
 output$info_box1 <- renderInfoBox({
     infoBox(title = "The filters Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01 and PG.Q.Value ≤ 0.01 are active.",
             paste("PG MaxLFQ Quality score ≥ ", input$PG.MaxLFQ.Quality),
@@ -227,7 +239,7 @@ MS_corr <- reactive({
     dplyr::mutate(File.Name = Run)
 })
 
-  PCA_label <- reactive({
+PCA_label <- reactive({
   unique_genes() %>%
   log2() %>%
   na.omit() %>%
@@ -245,7 +257,7 @@ pca_data <- reactive({
     autoplot(data = PCA_label(), colour = "Sample", label = TRUE)
 })
 
-  # download the filtered matrix
+# download the filtered matrix
 output$download <- downloadHandler(
     filename = function() {
         paste0(input$report, ".tsv")
@@ -254,7 +266,7 @@ output$download <- downloadHandler(
         readr::write_tsv(as.data.frame(unique_genes()) %>% rownames_to_column("protein_id"), file)
     }
 )
-  
+
 # calculate the cosine similarity in the matrix and plot the heatmap
 output$cosine_similarity <- renderPlot({
     unique_genes() %>%
@@ -268,7 +280,7 @@ output$cosine_similarity <- renderPlot({
     ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
     viridis::scale_fill_viridis(option = "E") +
-    theme(text = element_text(size = 20),
+    theme(text = element_text(size = 15),
         axis.text.x = element_text(angle = 90,
                         hjust = 1, vjust = 0.5),
         axis.text.y = element_text(angle = 0,
@@ -294,7 +306,7 @@ output$euclidean_distance <- renderPlot({
     ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
     viridis::scale_fill_viridis(option = "E") +
-    theme(text = element_text(size = 20),
+    theme(text = element_text(size = 15),
     axis.text.x = element_text(angle = 90,
                         hjust = 1, vjust = 0.5),
         axis.text.y = element_text(angle = 0,
@@ -320,7 +332,7 @@ output$jaccard_similarity <- renderPlot({
     ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
     viridis::scale_fill_viridis(option = "E") +
-    theme(text = element_text(size = 20),
+    theme(text = element_text(size = 15),
     axis.text.x = element_text(angle = 90,
                         hjust = 1, vjust = 0.5),
         axis.text.y = element_text(angle = 0,
@@ -364,6 +376,24 @@ output$jaccard_similarity <- renderPlot({
   
   output$plot3 <- renderPlot({
     data() %>%
+      as.data.frame() %>%
+      ggplot(aes(x = Precursor.Mz, 
+                 y = RT - Predicted.RT)) +
+      ggpointdensity::geom_pointdensity(size = 0.25) +
+      viridis::scale_color_viridis(option = "plasma") +
+      geom_hline(yintercept = c(1,0,-1), linetype = "dashed", color = "black") +
+      labs(
+        x = "Precursor m/z",
+        y = "RT - Predicted RT (min)",
+        color = NULL
+      ) +
+      theme(legend.key.width = unit(2, "cm"),
+            legend.position = "bottom") +
+      facet_wrap(~Run)
+  })
+  
+  output$plot4 <- renderPlot({
+    data() %>%
     as.data.frame() %>%
     ggplot(aes(x = Precursor.Charge)) +
     geom_density(alpha = 0.7, 
@@ -377,7 +407,23 @@ output$jaccard_similarity <- renderPlot({
     facet_wrap(~Run)
   })
 
-  output$plot4 <- renderPlot({
+  output$plot5 <- renderPlot({
+    data() %>%
+      ggplot(aes(x = peptide_length)) +
+      geom_histogram(alpha = 0.7,
+                     stat = "bin",
+                     binwidth = 1,
+                     show.legend = FALSE,
+                     fill = "tomato") +
+      labs(
+        x = "Peptide length (a.a.)",
+        y = "Count",
+        fill = NULL
+      ) +
+      facet_wrap(~Run, scales = "free")
+  })
+  
+  output$plot6 <- renderPlot({
     peptides_per_run() %>%
     as.data.frame() %>%
     ggplot(aes(y = Run, x = n_peptides)) +
@@ -397,7 +443,7 @@ output$jaccard_similarity <- renderPlot({
     )
   })
 
-  output$plot5 <- renderPlot({
+  output$plot7 <- renderPlot({
     proteins() %>%
     as.data.frame() %>%
     ggplot(aes(y = Run, x = n_proteins)) +
@@ -417,7 +463,7 @@ output$jaccard_similarity <- renderPlot({
     )
   })
 
-  output$plot6 <- renderPlot({
+  output$plot8 <- renderPlot({
     unique_genes() %>%
     as.data.frame() %>%
     gather(key = "Sample", value = "Intensity") %>%
@@ -439,7 +485,7 @@ output$jaccard_similarity <- renderPlot({
     )
   })
 
-  output$plot7 <- renderPlot({
+  output$plot9 <- renderPlot({
     missing_vs_mean() %>%
     ggplot(aes(x = missing, y = median_intensity)) +
     geom_point(alpha = 0.7, size = 3) +
@@ -451,7 +497,7 @@ output$jaccard_similarity <- renderPlot({
     facet_wrap(~norm)
   })
 
-  output$plot8 <- renderPlot({
+  output$plot10 <- renderPlot({
   combined_data() %>%
     as.data.frame() %>%
     ggplot(aes(
@@ -472,56 +518,36 @@ output$jaccard_similarity <- renderPlot({
         fill = NULL) +
   facet_wrap(~norm)
   })
-
-  output$plot9 <- renderPlot({
-    data() %>%
-    as.data.frame() %>%
-    ggplot(aes(x = Precursor.Mz, 
-                y = RT - Predicted.RT)) +
-    ggpointdensity::geom_pointdensity(size = 0.25) +
-    viridis::scale_color_viridis(option = "plasma") +
-    geom_hline(yintercept = c(1,0,-1), linetype = "dashed", color = "black") +
-    labs(
-        x = "Precursor m/z",
-        y = "RT - Predicted RT (min)",
-        color = NULL
-    ) +
-    theme(legend.key.width = unit(2, "cm"),
-    legend.position = "bottom") +
-    facet_wrap(~Run)
-  })
-
-  output$plot10 <- renderPlot({
+  
+  output$plot11 <- renderPlot({
     data() %>%
     as.data.frame() %>%
      dplyr::mutate(specificity = case_when(
-        str_detect(Stripped.Sequence, "K$|R$") ~ "Specific C-termini",
+        str_detect(Stripped.Sequence, "K$|R$") ~ "Trypsin C-termini",
+        str_detect(Stripped.Sequence, "E$|D$") ~ "GluC C-termini",
         TRUE ~ "Missed C-termini")
     ) %>%
     group_by(Run, specificity) %>%
     dplyr::summarise(
         peptides = n()
     ) %>%
-    ggplot(aes(x = Run, y = peptides,
+    ggplot(aes(y = Run, x = peptides,
                 fill = specificity)) +
     geom_col(alpha = 0.7,
-            position = "dodge") +
-    geom_text(aes(label = peptides),
-        position = position_dodge(width = 1),
-        vjust = -0.25, size = 3) +
-    scale_fill_manual(values = c("Specific C-termini" = "darkblue",
-                                "Missed C-termini" = "tomato")) +
+            position = "stack") +
+    scale_fill_manual(values = c("Trypsin C-termini" = "tomato",
+                                "GluC C-termini" = "darkblue",
+                                "Missed C-termini" = "darkgreen")) +
     labs(
-        x = NULL,
-        y = "Count",
+        y = NULL,
+        x = "Count",
         fill = "Specificity"
     ) +
-    theme(legend.position = "bottom",
-        axis.text.x = element_text(angle = 90,
-                        hjust = 1, vjust = 0.5))
+    theme(legend.position = "top",
+        axis.text.x = element_text(hjust = 0.5, vjust = 1))
   })
 
-output$plot11 <- renderPlot({
+output$plot12 <- renderPlot({
     MS_corr() %>% 
     as.data.frame() %>%
     dplyr::mutate(EQScore_cutoff = case_when(
@@ -534,21 +560,42 @@ output$plot11 <- renderPlot({
     labs(x = "MS1 Profile Correlation",
         y = "Density",
         fill = "Correlation between MS1 and MS2 chromatograms") +
-    theme(legend.position = "top") +
+    theme(legend.position = "top",
+          axis.text.x = element_text(angle = 90)) +
     facet_wrap(~Run)
   })
 
-output$plot12 <- renderPlot({
+output$plot13 <- renderPlot({
   QuantUMS_scores() %>%
     as.data.frame() %>%
     ggplot() +
     geom_density(aes(x = Score, fill = Filter), alpha = 0.7) +
+    scale_fill_manual(values = c("PG.MaxLFQ.Quality" = "tomato",
+                                "Empirical.Quality" = "darkblue",
+                                "Quantity.Quality" = "darkgreen")) +
     labs(x = "Score",
         y = "Density",
         fill = NULL) +
-    theme(legend.position = "bottom") +
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(angle = 90)) +
     facet_wrap(~Run)
   })
+
+output$plot14 <- renderPlot({
+  gene_quantity() %>%
+    as.data.frame() %>%
+    ggplot() +
+    geom_density(aes(x = log2(quantity), fill = protein_metrics), alpha = 0.7) +
+    scale_fill_manual(values = c("Genes.MaxLFQ" = "tomato",
+                                "Genes.MaxLFQ.Unique" = "darkblue",
+                                "PG.MaxLFQ" = "darkgreen")) +
+    labs(x = "Protein Quantity",
+         y = "Density",
+         fill = NULL) +
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(angle = 90)) +
+    facet_wrap(~Run)
+})
 
 output$QuantUMS_dist <- renderPlotly({
     data() %>%
@@ -569,7 +616,7 @@ output$QuantUMS_dist <- renderPlotly({
   })
 
 # plot the sample correlation using the columns from the selectInput
-output$plot13 <- renderPlotly({
+output$Corr <- renderPlotly({
     unique_genes() %>%
     log2() %>%
     as.data.frame() %>%
@@ -581,11 +628,11 @@ output$plot13 <- renderPlotly({
         y = paste0("Log2(", input$ycol, ")"))
   })
 
-  # plot the PCA
+# plot the PCA
 output$PCA <- renderPlotly({
     pca_data()
   })
-  
+
 }
 
 # Run the application
