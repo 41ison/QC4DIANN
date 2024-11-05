@@ -2,6 +2,63 @@
 ## Alison Felipe Alencar Chaves
 ## For detailed explanation, check out the GitHub repository: https://github.com/41ison/QC4DIANN
 
+# Check whether you have the required packages installed, if not install them
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+
+if (!requireNamespace("shiny", quietly = TRUE)) {
+  install.packages("shiny")
+}
+
+if (!requireNamespace("shinydashboard", quietly = TRUE)) {
+  install.packages("shinydashboard")
+}
+
+if (!requireNamespace("diann", quietly = TRUE)) {
+  devtools::install_github("https://github.com/vdemichev/diann-rpackage")
+}
+
+if (!requireNamespace("arrow", quietly = TRUE)) {
+  install.packages("arrow")
+}
+
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+  install.packages("tidyverse")
+}
+
+if (!requireNamespace("ggpointdensity", quietly = TRUE)) {
+  install.packages("ggpointdensity")
+}
+
+if (!requireNamespace("limma", quietly = TRUE)) {
+  BiocManager::install("limma")
+}
+
+if (!requireNamespace("vegan", quietly = TRUE)) {
+  install::packages("vegan")
+}
+
+if (!requireNamespace("lsa", quietly = TRUE)) {
+  install::packages("lsa")
+}
+
+if (!requireNamespace("plotly", quietly = TRUE)) {
+  install::packages("plotly")
+}
+
+if (!requireNamespace("viridis", quietly = TRUE)) {
+  install::packages("viridis")
+}
+
+if (!requireNamespace("ggfortify", quietly = TRUE)) {
+  install::packages("ggfortify")
+}
+
 # Load required libraries
 library(shiny)
 library(shinydashboard)
@@ -16,8 +73,8 @@ library(plotly)
 library(viridis)
 library(ggfortify)
 
-# Increase the maximum file size to 900 MB
-options(shiny.maxRequestSize = 900 * 1024^2)
+# Increase the maximum file size to 1 GB
+options(shiny.maxRequestSize = 1000 * 1024^2)
 
 # set the general theme for the plots
 theme_set(theme_bw())
