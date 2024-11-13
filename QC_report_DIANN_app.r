@@ -23,10 +23,6 @@ if (!requireNamespace("diann", quietly = TRUE)) {
   devtools::install_github("https://github.com/vdemichev/diann-rpackage")
 }
 
-if (!requireNamespace("arrow", quietly = TRUE)) {
-  install.packages("arrow")
-}
-
 if (!requireNamespace("tidyverse", quietly = TRUE)) {
   install.packages("tidyverse")
 }
@@ -40,23 +36,30 @@ if (!requireNamespace("limma", quietly = TRUE)) {
 }
 
 if (!requireNamespace("vegan", quietly = TRUE)) {
-  install::packages("vegan")
+  install.packages("vegan")
 }
 
 if (!requireNamespace("lsa", quietly = TRUE)) {
-  install::packages("lsa")
+  install.packages("lsa")
 }
 
 if (!requireNamespace("plotly", quietly = TRUE)) {
-  install::packages("plotly")
+  install.packages("plotly")
 }
 
 if (!requireNamespace("viridis", quietly = TRUE)) {
-  install::packages("viridis")
+  install.packages("viridis")
 }
 
 if (!requireNamespace("ggfortify", quietly = TRUE)) {
-  install::packages("ggfortify")
+  install.packages("ggfortify")
+}
+
+# Set the environment variable to enable zstd support.
+Sys.setenv(LIBARROW_MINIMAL = "false", ARROW_WITH_ZSTD = "ON")
+
+if (!requireNamespace("arrow", quietly = TRUE)) {
+  install.packages("arrow")
 }
 
 # Load required libraries
