@@ -59,7 +59,7 @@ proteins <- diann_report %>%
     )
 ```
 
-❕**Troubleshooting - macOS**
+##❕**Troubleshooting - macOS**
 
 If you are using a macOS, the `read_parquet()` function from the {arrow} package may not work, you can do the following to solve the error and get everything working:
 - Download the {arrow} package from the CRAN repository to avoid timeout issues.
@@ -74,7 +74,7 @@ install.packages("/Users/chaves/Downloads/arrow_17.0.0.1.tgz",
                     repos = NULL, type = "source", force = TRUE)
 ```
 
-❕**Troubleshooting - Linux**
+##❕**Troubleshooting - Linux**
 
 If you are using some Linux distribution you will need to compile the `arrow` library.
 There is no easy and straightforward way to solve it than to set up your environment to install R packages from Posit Package Manager.
@@ -87,6 +87,7 @@ The files will be saved in the working directory and can be inspected in Excel, 
 readr::write_tsv(diann_report, "diann_report_QuantUMS.tsv")
 readr::write_tsv(unique_genes, "diann_matrix_QuantUMS.tsv")
 ```
+# Extracting information from data
 
 For the reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
 
