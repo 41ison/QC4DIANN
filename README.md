@@ -59,7 +59,7 @@ proteins <- diann_report %>%
     )
 ```
 
-❕**Troubleshooting**
+❕**Troubleshooting - macOS**
 
 If you are using a macOS, the `read_parquet()` function from the {arrow} package may not work, you can do the following to solve the error and get everything working:
 - Download the {arrow} package from the CRAN repository to avoid timeout issues.
@@ -73,6 +73,12 @@ Sys.setenv(LIBARROW_MINIMAL = "false", ARROW_WITH_ZSTD = "ON")
 install.packages("/Users/chaves/Downloads/arrow_17.0.0.1.tgz",
                     repos = NULL, type = "source", force = TRUE)
 ```
+
+❕**Troubleshooting - Linux**
+
+If you are using some Linux distribution you will need to compile the `arrow` library.
+There is no easy and straightforward way to solve it than to set up your environment to install R packages from Posit Package Manager.
+Follow the recommendations in [Posit Package Manager site](https://packagemanager.posit.co/client/#/repos/cran/setup), then install arrow R package following the orientation in [arrow documentation](https://arrow.apache.org/docs/r/articles/install.html).
 
 If it is necessary to use the data in other pipelines, you can write a tsv file filtered for the whole data and for the matrix.
 The files will be saved in the working directory and can be inspected in Excel, for instance.
