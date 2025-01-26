@@ -231,10 +231,12 @@ ggsave("sparsity_plot.png",
     height = 10, units = "in", dpi = 350)
 ```
 
-Calculate the proportion of missing values and median abundance per sample and plot the correlation between them.
-This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biometry and Statistics).
+Calculate the proportion of missing values and mean abundance per sample and plot the correlation between them.
+This step is recommended by Prof. Dr. Clemens Kreutz (Institute of Medical Biometry and Statistics) to check the benefits of normalization.
+Thy to check the sample bias before and after the normalization.
 You will see that, depending on the normalization method used, the correlation will change.
 Try to compare the normalization using scale and quantile, for instance.
+>Brombacher E, Schilling O, Kreutz C. Characterizing the omics landscape based on 10,000+ datasets. Sci Rep. 2025 Jan 25;15(1):3189. [doi: 10.1038/s41598-025-87256-5](https://www.nature.com/articles/s41598-025-87256-5).
 
 ```r
 sample_abundance_vs_missing <- log2(unique_genes) %>%
