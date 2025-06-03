@@ -167,7 +167,8 @@ server <- function(input, output, session) {
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
       dplyr::mutate(File.Name = Run,
                     peptide_length = nchar(Stripped.Sequence)) %>%
-      dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality)
+      dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
+      dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE))
   })
 
   # Reactive expression to filter number of proteins based on the input filters
@@ -177,6 +178,7 @@ server <- function(input, output, session) {
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
       dplyr::mutate(File.Name = Run) %>%
       dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
+      dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE)) %>%
       dplyr::group_by(Run) %>%
       dplyr::summarise(
         n_proteins = n_distinct(Protein.Ids)
@@ -190,6 +192,7 @@ server <- function(input, output, session) {
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
       dplyr::mutate(File.Name = Run) %>%
       dplyr::filter(.$PG.MaxLFQ.Quality >= input$PG.MaxLFQ.Quality & .$Empirical.Quality >= input$Empirical.Quality) %>%
+      dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE)) %>%
       dplyr::group_by(Run) %>%
       dplyr::summarise(
         n_peptides = n_distinct(Stripped.Sequence)
@@ -238,6 +241,7 @@ combined_data <- reactive({
     req(input$report)
     diann_report <- arrow::read_parquet(input$report$datapath) %>%
       dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
+      dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE)) %>%
       dplyr::mutate(File.Name = Run) %>%
       dplyr::select(Run, Precursor.Id, PG.MaxLFQ.Quality, Empirical.Quality, Quantity.Quality) %>%
       pivot_longer(-c(Run, Precursor.Id),
@@ -490,7 +494,7 @@ output$jaccard_similarity <- renderPlot({
     geom_bar(stat = "identity", position = "dodge", alpha = 0.7,
             fill = "darkblue", show.legend = FALSE) +
     geom_text(aes(label = n_peptides),
-        color = "white", size = 5,
+        color = "white", size = 7,
         hjust = 1, nudge_x = -0.5
         ) +
     labs(y = NULL,
@@ -510,7 +514,7 @@ output$jaccard_similarity <- renderPlot({
     geom_bar(stat = "identity", position = "dodge", alpha = 0.7,
             fill = "darkblue", show.legend = FALSE) +
     geom_text(aes(label = n_proteins),
-        color = "white", size = 5,
+        color = "white", size = 7,
         hjust = 1, nudge_x = -0.5
         ) +
     labs(y = NULL,
@@ -535,7 +539,7 @@ output$jaccard_similarity <- renderPlot({
     ggplot(aes(x = Sample, y = missing)) +
     geom_col(fill = "darkblue", alpha = 0.7, show.legend = FALSE) +
     geom_text(aes(label = round(missing, 2)),
-        vjust = -0.25, size = 3) +
+        vjust = -0.25, size = 7) +
     labs(x = NULL,
         y = "Proportion of missing values per sample (%)",
         fill = NULL) +
