@@ -3,59 +3,19 @@
 ## For detailed explanation, check out the GitHub repository: https://github.com/41ison/QC4DIANN
 
 # Check whether you have the required packages installed, if not install them
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
-
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-  install.packages("BiocManager")
-}
-
-if (!requireNamespace("shiny", quietly = TRUE)) {
-  install.packages("shiny")
-}
-
-if (!requireNamespace("shinydashboard", quietly = TRUE)) {
-  install.packages("shinydashboard")
-}
+CRAN_packages <- c("devtools", "BiocManager", "shiny", "shinydashboard", "tidyverse", "janitor", "ggpointdensity", "ggtext", "lsa", "vegan", "plotly", "viridis", "ggfortify")
+not_installed_CRAN <- CRAN_packages[!(CRAN_packages %in% installed.packages()[ , "Package"])]
+if(length(not_installed_CRAN)) install.packages(not_installed_CRAN)
 
 if (!requireNamespace("diann", quietly = TRUE)) {
   devtools::install_github("https://github.com/vdemichev/diann-rpackage")
-}
-
-if (!requireNamespace("tidyverse", quietly = TRUE)) {
-  install.packages("tidyverse")
-}
-
-if (!requireNamespace("ggpointdensity", quietly = TRUE)) {
-  install.packages("ggpointdensity")
 }
 
 if (!requireNamespace("limma", quietly = TRUE)) {
   BiocManager::install("limma")
 }
 
-if (!requireNamespace("vegan", quietly = TRUE)) {
-  install.packages("vegan")
-}
-
-if (!requireNamespace("lsa", quietly = TRUE)) {
-  install.packages("lsa")
-}
-
-if (!requireNamespace("plotly", quietly = TRUE)) {
-  install.packages("plotly")
-}
-
-if (!requireNamespace("viridis", quietly = TRUE)) {
-  install.packages("viridis")
-}
-
-if (!requireNamespace("ggfortify", quietly = TRUE)) {
-  install.packages("ggfortify")
-}
-
-# Set the environment variable to enable zstd support.
+# Troubleshooting : set the environment variable to enable zstd support before installing the arrow library.
 Sys.setenv(LIBARROW_MINIMAL = "false", ARROW_WITH_ZSTD = "ON")
 
 if (!requireNamespace("arrow", quietly = TRUE)) {
@@ -94,7 +54,7 @@ theme_update(
 ui <- dashboardPage(
 
   dashboardHeader(
-      title = "QC Reporting dashboard for DIANN search results", titleWidth = "400",
+      title = "QC Reporting dashboard for DIA-NN search results", titleWidth = "400",
       dropdownMenu(
         type = "messages",
         messageItem(
