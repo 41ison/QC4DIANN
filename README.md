@@ -1,4 +1,7 @@
-## Quality control analysis of DIA data using [DIA-NN 1.9.2](https://github.com/vdemichev/DiaNN/releases/tag/1.9.2) search results
+## Quality control analysis of DIA data using [DIA-NN](https://github.com/vdemichev/DiaNN) search results
+
+If you use the QC4DIANN, please consider to cite the following publication:
+>Moschem JDC, de Barros BCSC, Serrano SMT, Chaves AFA. Decoding the Impact of Isolation Window Selection and QuantUMS Filtering in DIA-NN for DIA Quantification of Peptides and Proteins. J Proteome Res. 2025 Jul 8. doi: [10.1021/acs.jproteome.5c00009](https://pubs.acs.org/doi/10.1021/acs.jproteome.5c00009). Epub ahead of print. PMID: 40629671.
 
 ### General information
 In this repository you will find the quarto markdown **`QC_report_DIANN.qmd`** for QC check from DIANN search results and the shiny app **`QC_report_DIANN_app.r`** that will help you to vizualise the results without coding skills. All you need to do is to download the **`QC_report_DIANN_app.r`**, open it in RStudio and click **`Run app`**. The app will start, then you browse the `report.parquet` file from DIANN. Naturally, make sure you have the required libraries installed in order to have the app working properly.
@@ -89,7 +92,7 @@ readr::write_tsv(unique_genes, "diann_matrix_QuantUMS.tsv")
 ```
 # Extracting information from data
 
-For the reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
+For the reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample. This isn't your total chromatograms. Only peaks assigned to peptide identification are plotted.
 
 :bulb: You can generate a new column for `condition, group, etc.` and add the `color = condition` to the `aes()`, for instance.
 
@@ -111,7 +114,7 @@ ggsave("precursor_rt.png",
 ```
 
 Plot the m/z map to show the density of ions collected over the scan range and retention time.
-It can be very informative of instability in spray or chromatographic setup in general.
+It can be very informative of instability in spray or chromatographic setup in general. Also, if you have important variaiton in mass calibration, it will be reflected in gaps in this plot.
 
 ```r
 mz_map_density_plot <- diann_report %>%
@@ -134,7 +137,7 @@ ggsave("mz_map_density_plot.png",
     height = 10, units = "in", dpi = 350)
 ```
 
-The charge state distribution can be informative in experiments using FAIMS, for instance.
+The charge state distribution can be informative in experiments using FAIMS, for example.
 
 ```r
 precursor_charge_density <- diann_report %>%
@@ -337,7 +340,7 @@ ggsave("RT_error.png",
     height = 10, units = "in", dpi = 350)
 ```
 
-Plot the Posterior Error Probability (PEP) density distribution per Run. This is a estimation of local FDR.
+Plot the Posterior Error Probability (PEP) density distribution per Run. This is an estimate of the local FDR.
 
 ```r
 PEP_plot <- diann_report %>%
@@ -381,7 +384,7 @@ ggsave("FWHM_density.png",
 ```
 
 ### evaluate the digestion efficiency by plotting the missed cleavages
-We can separate the peptides by the specificity of the enzyme used in the digestion. In this case, we are using Trypsin, so we can evaluate the missed cleavages by the presence of K or R at the C-terminal of the peptide.
+We can separate the peptides by the specificity of the enzyme used in the digestion. In this case, we are using Trypsin, so we can evaluate the missed cleavages by the presence of K or R at the C-termini of the peptide.
 
 ```r
 missed_cleavages <- diann_report %>%
