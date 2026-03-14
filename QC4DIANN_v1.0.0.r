@@ -1,6 +1,7 @@
 ## Dashboard QC report for DIANN search results
 ## For detailed explanation, check out the GitHub repository: https://github.com/41ison/QC4DIANN
 ## Moschem JDC, de Barros BCSC, Serrano SMT, Chaves AFA. Decoding the Impact of Isolation Window Selection and QuantUMS Filtering in DIA-NN for DIA Quantification of Peptides and Proteins. J Proteome Res. 2025 Jul 8. doi: 10.1021/acs.jproteome.5c00009. Epub ahead of print. PMID: 40629671.
+## QC4DIANN v1.0.0
 
 # Check whether you have the required packages installed, if not install them
 CRAN_packages <- c("devtools", "BiocManager", "shiny", "shinydashboard", "tidyverse", "janitor", "ggpointdensity", "ggtext", "lsa", "vegan", "plotly", "viridis", "ggfortify")
